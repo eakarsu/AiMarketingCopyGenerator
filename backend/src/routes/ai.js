@@ -412,4 +412,189 @@ Generate a JSON response with these fields:
   }
 });
 
+// SEO Optimizer - Optimize content for SEO
+router.post('/seo-optimization', authMiddleware, async (req, res) => {
+  try {
+    const { content, contentType, targetKeywords } = req.body;
+
+    const systemPrompt = `You are an expert SEO specialist who optimizes content for search engines while maintaining readability and engagement. Provide actionable improvements. Always output in JSON format.`;
+
+    const prompt = `Optimize the following content for SEO:
+Content: ${content}
+Content Type: ${contentType}
+Target Keywords: ${targetKeywords}
+
+Analyze and optimize the content. Generate a JSON response with these fields:
+{
+  "optimized_content": "The SEO-optimized version of the content with keywords naturally integrated",
+  "keywords_added": "Comma-separated list of keywords added or emphasized",
+  "readability_score": number from 1-100,
+  "seo_score_before": number from 1-100 (estimate of original content),
+  "seo_score_after": number from 1-100 (estimate after optimization),
+  "suggestions": "Bullet-pointed list of additional SEO improvements"
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+
+    res.json({
+      original_content: content,
+      content_type: contentType,
+      ...parsed,
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ error: 'Failed to optimize content for SEO' });
+  }
+});
+
+// Tone Adjuster - Adjust the tone of text
+router.post('/tone-adjustment', authMiddleware, async (req, res) => {
+  try {
+    const { text, targetTone, context } = req.body;
+
+    const systemPrompt = `You are an expert copywriter who can transform text to match any desired tone while preserving the core message. You understand nuances between professional, casual, friendly, formal, urgent, empathetic, and other tones. Always output in JSON format.`;
+
+    const prompt = `Adjust the tone of the following text:
+Original Text: ${text}
+Target Tone: ${targetTone}
+Context: ${context || 'General marketing content'}
+
+Transform the text to match the target tone. Generate a JSON response with these fields:
+{
+  "adjusted_text": "The text rewritten in the target tone",
+  "original_tone": "Detected tone of the original text",
+  "confidence_score": number from 1-100 indicating how well the adjustment matches the target tone
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+
+    res.json({
+      original_text: text,
+      target_tone: targetTone,
+      context: context || 'General marketing content',
+      ...parsed,
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ error: 'Failed to adjust tone' });
+  }
+});
+
+// A/B Variation Generator - Generate test variations
+router.post('/ab-variation', authMiddleware, async (req, res) => {
+  try {
+    const { content, contentType, testGoal } = req.body;
+
+    const systemPrompt = `You are an expert in conversion rate optimization and A/B testing. You create meaningful variations that test specific hypotheses while maintaining brand consistency. Always output in JSON format.`;
+
+    const prompt = `Create A/B test variations for the following:
+Original Content: ${content}
+Content Type: ${contentType}
+Test Goal: ${testGoal}
+
+Generate three meaningfully different variations to test. Generate a JSON response with these fields:
+{
+  "variation_a": "First variation - control or minor changes",
+  "variation_b": "Second variation - moderate changes testing a specific element",
+  "variation_c": "Third variation - bold changes testing a different approach",
+  "hypothesis": "What hypothesis each variation tests",
+  "recommended_variant": "A", "B", or "C" - which to start testing with
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+
+    res.json({
+      original_content: content,
+      content_type: contentType,
+      test_goal: testGoal,
+      ...parsed,
+      status: 'active'
+    });
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ error: 'Failed to generate A/B variations' });
+  }
+});
+
+// Headline Scorer - Score and improve headlines
+router.post('/headline-score', authMiddleware, async (req, res) => {
+  try {
+    const { headline, industry } = req.body;
+
+    const systemPrompt = `You are an expert headline analyst who scores headlines based on emotional impact, power words, length, clarity, and SEO potential. You provide actionable improvements. Always output in JSON format.`;
+
+    const prompt = `Analyze and score the following headline:
+Headline: ${headline}
+Industry: ${industry || 'General'}
+
+Score the headline and provide improvements. Generate a JSON response with these fields:
+{
+  "overall_score": number from 1-100,
+  "emotional_score": number from 1-100 (emotional impact),
+  "power_words_score": number from 1-100 (use of power words),
+  "length_score": number from 1-100 (optimal length),
+  "clarity_score": number from 1-100 (message clarity),
+  "seo_score": number from 1-100 (SEO potential),
+  "suggestions": "Bullet-pointed list of specific improvements",
+  "improved_headlines": "Three improved versions of the headline, each on a new line"
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+
+    res.json({
+      headline,
+      ...parsed,
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ error: 'Failed to score headline' });
+  }
+});
+
+// Localization Engine - Translate and localize content
+router.post('/localization', authMiddleware, async (req, res) => {
+  try {
+    const { content, sourceLanguage, targetLanguage, contentType, region } = req.body;
+
+    const systemPrompt = `You are an expert localization specialist who not only translates but adapts content for cultural context, local expressions, and regional preferences. You understand marketing localization best practices. Always output in JSON format.`;
+
+    const prompt = `Localize the following content:
+Content: ${content}
+Source Language: ${sourceLanguage}
+Target Language: ${targetLanguage}
+Content Type: ${contentType || 'Marketing copy'}
+Target Region: ${region || 'General'}
+
+Translate and culturally adapt the content. Generate a JSON response with these fields:
+{
+  "localized_content": "The translated and culturally adapted content",
+  "cultural_notes": "Notes on cultural adaptations made and considerations",
+  "quality_score": number from 1-100 indicating localization quality
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+
+    res.json({
+      original_content: content,
+      source_language: sourceLanguage,
+      target_language: targetLanguage,
+      content_type: contentType || 'Marketing copy',
+      region: region || 'General',
+      ...parsed,
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('AI generation error:', error);
+    res.status(500).json({ error: 'Failed to localize content' });
+  }
+});
+
 module.exports = router;

@@ -7,6 +7,11 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     name VARCHAR(255),
     company VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'admin',
+    phone VARCHAR(50),
+    bio TEXT,
+    password_reset_token VARCHAR(255),
+    password_reset_expires TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -163,6 +168,90 @@ CREATE TABLE IF NOT EXISTS video_scripts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- SEO Optimizations table (AI SEO Optimizer)
+CREATE TABLE IF NOT EXISTS seo_optimizations (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    original_content TEXT NOT NULL,
+    optimized_content TEXT NOT NULL,
+    content_type VARCHAR(100),
+    keywords_added TEXT,
+    readability_score INTEGER,
+    seo_score_before INTEGER,
+    seo_score_after INTEGER,
+    suggestions TEXT,
+    status VARCHAR(50) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tone Adjustments table (AI Tone Adjuster)
+CREATE TABLE IF NOT EXISTS tone_adjustments (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    original_text TEXT NOT NULL,
+    adjusted_text TEXT NOT NULL,
+    original_tone VARCHAR(100),
+    target_tone VARCHAR(100) NOT NULL,
+    context VARCHAR(255),
+    confidence_score INTEGER,
+    status VARCHAR(50) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- A/B Variations table (AI A/B Variation Generator)
+CREATE TABLE IF NOT EXISTS ab_variations (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    original_content TEXT NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    variation_a TEXT NOT NULL,
+    variation_b TEXT NOT NULL,
+    variation_c TEXT,
+    hypothesis TEXT,
+    test_goal VARCHAR(255),
+    recommended_variant VARCHAR(1),
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Headline Scores table (AI Headline Scorer)
+CREATE TABLE IF NOT EXISTS headline_scores (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    headline VARCHAR(500) NOT NULL,
+    overall_score INTEGER NOT NULL,
+    emotional_score INTEGER,
+    power_words_score INTEGER,
+    length_score INTEGER,
+    clarity_score INTEGER,
+    seo_score INTEGER,
+    suggestions TEXT,
+    improved_headlines TEXT,
+    status VARCHAR(50) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Localizations table (AI Localization Engine)
+CREATE TABLE IF NOT EXISTS localizations (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    original_content TEXT NOT NULL,
+    source_language VARCHAR(50) NOT NULL,
+    target_language VARCHAR(50) NOT NULL,
+    localized_content TEXT NOT NULL,
+    content_type VARCHAR(100),
+    cultural_notes TEXT,
+    region VARCHAR(100),
+    quality_score INTEGER,
+    status VARCHAR(50) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_ad_copies_user ON ad_copies(user_id);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_user ON email_campaigns(user_id);
@@ -174,3 +263,8 @@ CREATE INDEX IF NOT EXISTS idx_taglines_user ON taglines(user_id);
 CREATE INDEX IF NOT EXISTS idx_seo_content_user ON seo_content(user_id);
 CREATE INDEX IF NOT EXISTS idx_press_releases_user ON press_releases(user_id);
 CREATE INDEX IF NOT EXISTS idx_video_scripts_user ON video_scripts(user_id);
+CREATE INDEX IF NOT EXISTS idx_seo_optimizations_user ON seo_optimizations(user_id);
+CREATE INDEX IF NOT EXISTS idx_tone_adjustments_user ON tone_adjustments(user_id);
+CREATE INDEX IF NOT EXISTS idx_ab_variations_user ON ab_variations(user_id);
+CREATE INDEX IF NOT EXISTS idx_headline_scores_user ON headline_scores(user_id);
+CREATE INDEX IF NOT EXISTS idx_localizations_user ON localizations(user_id);

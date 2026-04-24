@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # AI Marketing Copy Generator - Startup Script
-# This script sets up and starts the entire application
+# This script sets up and starts the entire application with hot reloading
 
 set -e
 
@@ -38,22 +38,46 @@ print_error() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Step 1: Clean up used ports
-print_status "Cleaning up ports 3000 and 3001..."
+# Step 1: Load ports from .env early for cleanup
+if [ -f .env ]; then
+    _BACKEND_PORT=$(grep -E '^BACKEND_PORT=' .env | cut -d= -f2 | tr -d '"' || echo "3001")
+    _FRONTEND_PORT=$(grep -E '^FRONTEND_PORT=' .env | cut -d= -f2 | tr -d '"' || echo "3000")
+else
+    _BACKEND_PORT=3001
+    _FRONTEND_PORT=3000
+fi
 
-# Force kill all processes on port 3000 (frontend)
-for pid in $(lsof -ti:3000 2>/dev/null); do
-    print_warning "Killing process $pid on port 3000..."
-    kill -9 $pid 2>/dev/null || true
-done
+print_status "Cleaning up ports $_FRONTEND_PORT and $_BACKEND_PORT..."
 
-# Force kill all processes on port 3001 (backend)
-for pid in $(lsof -ti:3001 2>/dev/null); do
-    print_warning "Killing process $pid on port 3001..."
-    kill -9 $pid 2>/dev/null || true
+# Kill any lingering node processes from previous runs of this project
+pkill -f "react-scripts start" 2>/dev/null || true
+pkill -f "nodemon" 2>/dev/null || true
+
+for P in $_FRONTEND_PORT $_BACKEND_PORT; do
+    PIDS=$(lsof -ti:$P 2>/dev/null || true)
+    for pid in $PIDS; do
+        print_warning "Killing process $pid on port $P..."
+        kill -9 $pid 2>/dev/null || true
+    done
 done
 
 sleep 2
+
+# Wait until ports are actually free (up to 10 seconds)
+for P in $_FRONTEND_PORT $_BACKEND_PORT; do
+    RETRIES=0
+    while lsof -ti:$P &>/dev/null && [ $RETRIES -lt 10 ]; do
+        print_warning "Port $P still in use, waiting..."
+        kill -9 $(lsof -ti:$P 2>/dev/null) 2>/dev/null || true
+        sleep 1
+        RETRIES=$((RETRIES + 1))
+    done
+    if lsof -ti:$P &>/dev/null; then
+        print_error "Could not free port $P after 10 seconds. Exiting."
+        exit 1
+    fi
+done
+
 print_success "Ports cleaned up"
 
 # Step 2: Check if PostgreSQL is running
@@ -66,7 +90,7 @@ if command -v pg_isready &> /dev/null; then
         print_warning "PostgreSQL is not running. Attempting to start..."
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS
-            brew services start postgresql 2>/dev/null || brew services start postgresql@14 2>/dev/null || true
+            brew services start postgresql 2>/dev/null || brew services start postgresql@14 2>/dev/null || brew services start postgresql@15 2>/dev/null || true
         else
             # Linux
             sudo systemctl start postgresql 2>/dev/null || sudo service postgresql start 2>/dev/null || true
@@ -80,15 +104,19 @@ fi
 # Step 3: Create database if it doesn't exist
 print_status "Setting up database..."
 
-# Load environment variables
+# Load environment variables from single root .env
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 DB_NAME=${DB_NAME:-ai_marketing_db}
 DB_USER=${DB_USER:-postgres}
 DB_HOST=${DB_HOST:-localhost}
 DB_PORT=${DB_PORT:-5432}
+BACKEND_PORT=${BACKEND_PORT:-3001}
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
 
 # Try to create database (ignore error if it exists)
 createdb -h $DB_HOST -p $DB_PORT -U $DB_USER $DB_NAME 2>/dev/null || true
@@ -111,35 +139,72 @@ cd "$SCRIPT_DIR/frontend"
 npm install --silent
 print_success "Frontend dependencies installed"
 
-# Step 7: Start the application
+# Step 7: Start the application with hot reloading
 cd "$SCRIPT_DIR"
 
-print_status "Starting backend server on port 3001..."
+echo ""
+echo "============================================"
+print_status "Starting servers with hot reloading..."
+echo "============================================"
+echo ""
+
+# Start backend with nodemon for hot reloading
+print_status "Starting backend server on port $BACKEND_PORT (with hot reload)..."
 cd "$SCRIPT_DIR/backend"
-npm start &
+npm run dev &
 BACKEND_PID=$!
 
 print_status "Waiting for backend to start..."
 sleep 3
 
-print_status "Starting frontend server on port 3000..."
+# Start frontend with React's built-in hot reloading
+# Set PORT explicitly for React dev server (overrides any inherited PORT)
+print_status "Starting frontend server on port $FRONTEND_PORT (with hot reload)..."
 cd "$SCRIPT_DIR/frontend"
-npm start &
+PORT=$FRONTEND_PORT BROWSER=none npm start &
 FRONTEND_PID=$!
+
+# Function to handle cleanup on exit
+cleanup() {
+    echo ""
+    print_warning "Shutting down servers..."
+    kill $BACKEND_PID 2>/dev/null || true
+    kill $FRONTEND_PID 2>/dev/null || true
+    # Kill entire process groups to catch child processes
+    pkill -P $BACKEND_PID 2>/dev/null || true
+    pkill -P $FRONTEND_PID 2>/dev/null || true
+    # Final cleanup of ports
+    for P in $FRONTEND_PORT $BACKEND_PORT; do
+        PIDS=$(lsof -ti:$P 2>/dev/null || true)
+        for pid in $PIDS; do
+            kill -9 $pid 2>/dev/null || true
+        done
+    done
+    print_success "Servers stopped"
+    exit 0
+}
+
+# Set up trap to catch exit signals
+trap cleanup SIGINT SIGTERM
 
 echo ""
 echo "============================================"
 print_success "Application started successfully!"
 echo "============================================"
 echo ""
-echo -e "${GREEN}Frontend:${NC} http://localhost:3000"
-echo -e "${GREEN}Backend:${NC}  http://localhost:3001"
+echo -e "${GREEN}Frontend:${NC} http://localhost:$FRONTEND_PORT"
+echo -e "${GREEN}Backend:${NC}  http://localhost:$BACKEND_PORT"
 echo ""
 echo -e "${YELLOW}Demo Credentials:${NC}"
 echo "  Email:    demo@aimarketing.com"
 echo "  Password: demo123"
 echo ""
-echo -e "${YELLOW}Note:${NC} Add your OpenRouter API key to .env file for AI features"
+echo -e "${BLUE}Features:${NC}"
+echo "  - Hot reloading enabled for both frontend and backend"
+echo "  - Backend changes detected by nodemon"
+echo "  - Frontend changes detected by React"
+echo ""
+echo -e "${YELLOW}Note:${NC} OpenRouter API key is configured in .env file"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 echo ""

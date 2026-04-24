@@ -14,10 +14,15 @@ const taglineRoutes = require('./routes/taglines');
 const seoContentRoutes = require('./routes/seoContent');
 const pressReleaseRoutes = require('./routes/pressReleases');
 const videoScriptRoutes = require('./routes/videoScripts');
+const seoOptimizationRoutes = require('./routes/seoOptimizations');
+const toneAdjustmentRoutes = require('./routes/toneAdjustments');
+const abVariationRoutes = require('./routes/abVariations');
+const headlineScoreRoutes = require('./routes/headlineScores');
+const localizationRoutes = require('./routes/localizations');
 const aiRoutes = require('./routes/ai');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.BACKEND_PORT || 3001;
 
 // Middleware
 app.use(cors({
@@ -38,6 +43,11 @@ app.use('/api/taglines', taglineRoutes);
 app.use('/api/seo-content', seoContentRoutes);
 app.use('/api/press-releases', pressReleaseRoutes);
 app.use('/api/video-scripts', videoScriptRoutes);
+app.use('/api/seo-optimizations', seoOptimizationRoutes);
+app.use('/api/tone-adjustments', toneAdjustmentRoutes);
+app.use('/api/ab-variations', abVariationRoutes);
+app.use('/api/headline-scores', headlineScoreRoutes);
+app.use('/api/localizations', localizationRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Health check
