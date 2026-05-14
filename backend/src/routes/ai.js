@@ -28,6 +28,11 @@ function parseAIResponse(text) {
 }
 
 async function generateWithAI(prompt, systemPrompt) {
+  if (!process.env.OPENROUTER_API_KEY) {
+    const e = new Error('AI service not configured (OPENROUTER_API_KEY missing)');
+    e.statusCode = 503;
+    throw e;
+  }
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
     headers: {
@@ -594,6 +599,128 @@ Translate and culturally adapt the content. Generate a JSON response with these 
   } catch (error) {
     console.error('AI generation error:', error);
     res.status(500).json({ error: 'Failed to localize content' });
+  }
+});
+
+// Brand Voice Analyzer — check copy against brand guidelines
+router.post('/brand-voice-analyzer', authMiddleware, async (req, res) => {
+  try {
+    const { copy, brandGuidelines, brandName } = req.body;
+    if (!copy) return res.status(400).json({ error: 'copy is required' });
+
+    const systemPrompt = `You are a brand voice auditor. Compare marketing copy against brand voice guidelines and report alignment. Always output in JSON format.`;
+    const prompt = `Analyze this marketing copy against the brand guidelines.
+
+Brand: ${brandName || 'unspecified'}
+Brand voice guidelines: ${brandGuidelines || 'infer reasonable defaults'}
+
+Copy:
+"""${copy}"""
+
+JSON schema:
+{
+  "alignment_score": number (0-100),
+  "tone_match": string,
+  "voice_match": string,
+  "issues": [{"issue": string, "severity": "low"|"medium"|"high", "suggestion": string}],
+  "rewrite": string
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+    res.json({ brand: brandName || null, ...parsed, status: 'completed' });
+  } catch (error) {
+    console.error('Brand voice analyzer error:', error);
+    res.status(500).json({ error: 'Failed to analyze brand voice' });
+  }
+});
+
+// Competitor Comparison — analyze competitor copy and suggest differentiation
+router.post('/competitor-comparison', authMiddleware, async (req, res) => {
+  try {
+    const { ourCopy, competitorCopy, productCategory } = req.body;
+    if (!ourCopy || !competitorCopy) {
+      return res.status(400).json({ error: 'ourCopy and competitorCopy are required' });
+    }
+
+    const systemPrompt = `You are a competitive marketing analyst. Compare two pieces of copy and recommend differentiation. Always output in JSON format.`;
+    const prompt = `Compare our copy vs competitor copy and recommend differentiation.
+
+Product category: ${productCategory || 'unspecified'}
+
+Our copy:
+"""${ourCopy}"""
+
+Competitor copy:
+"""${competitorCopy}"""
+
+JSON schema:
+{
+  "shared_themes": [string],
+  "competitor_strengths": [string],
+  "our_strengths": [string],
+  "our_weaknesses": [string],
+  "differentiation_angles": [{"angle": string, "rationale": string, "example_headline": string}],
+  "recommended_positioning": string
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+    res.json({ product_category: productCategory || null, ...parsed, status: 'completed' });
+  } catch (error) {
+    console.error('Competitor comparison error:', error);
+    res.status(500).json({ error: 'Failed to analyze competitor copy' });
+  }
+});
+
+// Audience Sentiment — predict how a target audience is likely to react to copy
+router.post('/audience-sentiment', authMiddleware, async (req, res) => {
+  try {
+    const { copy, audience, channel, productCategory } = req.body;
+    if (!copy) return res.status(400).json({ error: 'copy is required' });
+
+    const systemPrompt = `You are an audience-research analyst. Predict how the named target audience is
+likely to react to the marketing copy across affective, cognitive, and behavioral axes. Highlight which
+phrases trigger which reactions. Always output in JSON format only.`;
+    const prompt = `Predict audience sentiment for the following copy.
+
+Audience: ${audience || 'unspecified general consumer'}
+Channel: ${channel || 'unspecified'}
+Product category: ${productCategory || 'unspecified'}
+
+Copy:
+"""${copy}"""
+
+JSON schema:
+{
+  "overall_sentiment": "positive|neutral|negative|mixed",
+  "sentiment_score": number from -100 to 100,
+  "predicted_reactions": {
+    "affective": [string],
+    "cognitive": [string],
+    "behavioral": [string]
+  },
+  "trigger_phrases": [{"phrase": string, "predicted_effect": string, "polarity": "positive|neutral|negative"}],
+  "risk_phrases": [{"phrase": string, "risk": string}],
+  "expected_engagement": "high|medium|low",
+  "rewrite_suggestion": string
+}`;
+
+    const result = await generateWithAI(prompt, systemPrompt);
+    const parsed = parseAIResponse(result);
+    res.json({
+      audience: audience || null,
+      channel: channel || null,
+      product_category: productCategory || null,
+      ...parsed,
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('Audience sentiment error:', error);
+    if (error.statusCode === 503) {
+      return res.status(503).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to analyze audience sentiment' });
   }
 });
 
