@@ -87,3 +87,12 @@ try { const _gap_collaborative = require('./routes/gap-collaborative'); app.use(
 try { const _gap_style = require('./routes/gap-style'); app.use('/api/gap-style', _gap_style); } catch(e) { console.error('gap mount fail style:', e.message); }
 try { const _gap_webhooks = require('./routes/gap-webhooks'); app.use('/api/gap-webhooks', _gap_webhooks); } catch(e) { console.error('gap mount fail webhooks:', e.message); }
 // === End Batch 05 Mounts ===
+
+// === Custom Views (4 endpoints: variants, ctr-comparison, copy-export, brand-profiles) ===
+try {
+  const customViews = require('./routes/customViews');
+  app.use('/api/custom-views', customViews);
+  console.log('Mounted /api/custom-views');
+} catch (e) {
+  console.error('Failed to mount /api/custom-views:', e.message);
+}
