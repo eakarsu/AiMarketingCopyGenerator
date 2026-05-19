@@ -64,3 +64,35 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// === BATCH 05 AUTO-MOUNT (custom feature suggestions) ===
+app.use('/api/copy-optimizer-agent', require('./routes/copy-optimizer-agent'));
+app.use('/api/multi-language-adapt', require('./routes/multi-language-adapt'));
+app.use('/api/competitor-scrape', require('./routes/competitor-scrape'));
+app.use('/api/brand-voice-enforcer', require('./routes/brand-voice-enforcer'));
+app.use('/api/vertical-compliance-templates', require('./routes/vertical-compliance-templates'));
+
+// === Batch 05 Gaps & Frontend Mounts ===
+try { const _gap_brand_voice_analyzer = require('./routes/gap-brand-voice-analyzer'); app.use('/api/gap-brand-voice-analyzer', _gap_brand_voice_analyzer); } catch(e) { console.error('gap mount fail brand-voice-analyzer:', e.message); }
+try { const _gap_competitor_comparison = require('./routes/gap-competitor-comparison'); app.use('/api/gap-competitor-comparison', _gap_competitor_comparison); } catch(e) { console.error('gap mount fail competitor-comparison:', e.message); }
+try { const _gap_audience_sentiment = require('./routes/gap-audience-sentiment'); app.use('/api/gap-audience-sentiment', _gap_audience_sentiment); } catch(e) { console.error('gap mount fail audience-sentiment:', e.message); }
+try { const _gap_cta_optimizer = require('./routes/gap-cta-optimizer'); app.use('/api/gap-cta-optimizer', _gap_cta_optimizer); } catch(e) { console.error('gap mount fail cta-optimizer:', e.message); }
+try { const _gap_substantive = require('./routes/gap-substantive'); app.use('/api/gap-substantive', _gap_substantive); } catch(e) { console.error('gap mount fail substantive:', e.message); }
+try { const _gap_plagiarism = require('./routes/gap-plagiarism'); app.use('/api/gap-plagiarism', _gap_plagiarism); } catch(e) { console.error('gap mount fail plagiarism:', e.message); }
+try { const _gap_readability = require('./routes/gap-readability'); app.use('/api/gap-readability', _gap_readability); } catch(e) { console.error('gap mount fail readability:', e.message); }
+try { const _gap_cms = require('./routes/gap-cms'); app.use('/api/gap-cms', _gap_cms); } catch(e) { console.error('gap mount fail cms:', e.message); }
+try { const _gap_scheduling = require('./routes/gap-scheduling'); app.use('/api/gap-scheduling', _gap_scheduling); } catch(e) { console.error('gap mount fail scheduling:', e.message); }
+try { const _gap_cross_channel = require('./routes/gap-cross-channel'); app.use('/api/gap-cross-channel', _gap_cross_channel); } catch(e) { console.error('gap mount fail cross-channel:', e.message); }
+try { const _gap_collaborative = require('./routes/gap-collaborative'); app.use('/api/gap-collaborative', _gap_collaborative); } catch(e) { console.error('gap mount fail collaborative:', e.message); }
+try { const _gap_style = require('./routes/gap-style'); app.use('/api/gap-style', _gap_style); } catch(e) { console.error('gap mount fail style:', e.message); }
+try { const _gap_webhooks = require('./routes/gap-webhooks'); app.use('/api/gap-webhooks', _gap_webhooks); } catch(e) { console.error('gap mount fail webhooks:', e.message); }
+// === End Batch 05 Mounts ===
+
+// === Custom Views (4 endpoints: variants, ctr-comparison, copy-export, brand-profiles) ===
+try {
+  const customViews = require('./routes/customViews');
+  app.use('/api/custom-views', customViews);
+  console.log('Mounted /api/custom-views');
+} catch (e) {
+  console.error('Failed to mount /api/custom-views:', e.message);
+}

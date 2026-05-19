@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useRef, Component } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import AIToolsPage from './AIToolsPage';
+import CustomViewsPage from './pages/CustomViewsPage';
 
 // ==================== API Configuration ====================
 const api = axios.create({
@@ -794,6 +796,12 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         <nav className="sidebar-nav">
           <div className={`nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={() => handleNav('/')}>
             <Icons.Dashboard /> Dashboard
+          </div>
+          <div className={`nav-item ${location.pathname === '/ai-tools' ? 'active' : ''}`} onClick={() => handleNav('/ai-tools')}>
+            <Icons.AdCopy /> AI Tools
+          </div>
+          <div className={`nav-item ${location.pathname === '/copy-views' ? 'active' : ''}`} onClick={() => handleNav('/copy-views')}>
+            <Icons.Dashboard /> Copy Views
           </div>
           {features.map((feature) => (
             <div key={feature.id} className={`nav-item ${location.pathname.startsWith(feature.path) ? 'active' : ''}`}
@@ -1836,6 +1844,8 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
+              <Route path="/ai-tools" element={<ProtectedRoute><Layout><AIToolsPage /></Layout></ProtectedRoute>} />
+              <Route path="/copy-views" element={<ProtectedRoute><Layout><CustomViewsPage /></Layout></ProtectedRoute>} />
               {features.map((feature) => (
                 <Route key={feature.id} path={feature.path} element={
                   <ProtectedRoute><Layout><FeaturePage feature={feature} {...featureConfigs[feature.id]} /></Layout></ProtectedRoute>
