@@ -3,6 +3,10 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import axios from 'axios';
 import AIToolsPage from './AIToolsPage';
 import CustomViewsPage from './pages/CustomViewsPage';
+import OfferMessageFit from './pages/OfferMessageFit';
+
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
 
 // ==================== API Configuration ====================
 const api = axios.create({
@@ -802,6 +806,9 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           </div>
           <div className={`nav-item ${location.pathname === '/copy-views' ? 'active' : ''}`} onClick={() => handleNav('/copy-views')}>
             <Icons.Dashboard /> Copy Views
+          </div>
+          <div className={`nav-item ${location.pathname === '/offer-message-fit' ? 'active' : ''}`} onClick={() => handleNav('/offer-message-fit')}>
+            <Icons.Tagline /> Offer Fit
           </div>
           {features.map((feature) => (
             <div key={feature.id} className={`nav-item ${location.pathname.startsWith(feature.path) ? 'active' : ''}`}
@@ -1839,6 +1846,9 @@ function App() {
         <ToastProvider>
           <ConfirmProvider>
             <Routes>
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
               <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -1846,6 +1856,7 @@ function App() {
               <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
               <Route path="/ai-tools" element={<ProtectedRoute><Layout><AIToolsPage /></Layout></ProtectedRoute>} />
               <Route path="/copy-views" element={<ProtectedRoute><Layout><CustomViewsPage /></Layout></ProtectedRoute>} />
+              <Route path="/offer-message-fit" element={<ProtectedRoute><Layout><OfferMessageFit /></Layout></ProtectedRoute>} />
               {features.map((feature) => (
                 <Route key={feature.id} path={feature.path} element={
                   <ProtectedRoute><Layout><FeaturePage feature={feature} {...featureConfigs[feature.id]} /></Layout></ProtectedRoute>

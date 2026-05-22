@@ -49,6 +49,7 @@ app.use('/api/ab-variations', abVariationRoutes);
 app.use('/api/headline-scores', headlineScoreRoutes);
 app.use('/api/localizations', localizationRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/offer-message-fit', require('./routes/offer-message-fit'));
 
 // Health check
 app.get('/api/health', (req, res) => {
