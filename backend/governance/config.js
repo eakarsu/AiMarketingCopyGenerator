@@ -1,0 +1,29 @@
+module.exports={
+  caseType:'approved_marketing_asset_release',initialState:'brief_ingested',
+  states:['brief_ingested','rights_consent_verified','brand_voice_locked','copy_drafted','timeline_edited','localized','quality_accessibility_evaluated','moderation_review','legal_review','publication_approval','publish_observed','publish_failed','correction','outcome_reconciled','archived'],
+  createRoles:['copy_editor','campaign_manager'],assessmentRoles:['copy_editor','brand_reviewer','accessibility_reviewer','legal_reviewer','campaign_manager'],auditRoles:['campaign_manager','privacy_officer','legal_reviewer','auditor'],connectorRoles:['integration_operator','campaign_manager'],
+  evidenceKinds:['brief_manifest','source_manifest','rights_license','consent_record','brand_profile_version','copy_version','edit_timeline','localization_report','quality_report','accessibility_report','moderation_report','legal_approval','disclosure_receipt','publication_approval','publish_receipt','usage_receipt','outcome_report'],
+  requiredSignals:['briefVersion','brandVersion','sourceVersion','modelVersion','policyVersion','rightsVersion','voiceConsistency','factualSupport','accessibilityScore','moderationPass','rightsVerified','consentVerified','multilingualPassRate','exportCompatibility','p95LatencyMs','usageCost'],
+  professionalBoundary:'Copy is a reviewable draft. The API never invents substantiation, suppresses required disclosure, impersonates a person, spends campaign funds, or publishes without rights, consent, moderation, legal review, and independent human approval.',
+  connectors:[{name:'model_provider',purpose:'versioned draft generation receipts'},{name:'rights_asset_library',purpose:'source rights and consent provenance'},{name:'storage_cdn',purpose:'versioned artifact storage and export receipts'},{name:'transcription_translation',purpose:'locale and caption artifact receipts'},{name:'publishing',purpose:'approved channel publication receipts'},{name:'brand_registry',purpose:'authoritative brand voice and claims policies'},{name:'usage_accounting',purpose:'cost and quota reconciliation'},{name:'analytics',purpose:'versioned outcome observations'},{name:'moderation',purpose:'safety and prohibited-claim evidence'}],
+  transitions:[
+    {from:'brief_ingested',action:'verify_rights_consent',to:'rights_consent_verified',roles:['legal_reviewer','copy_editor'],requiresEvidence:true},
+    {from:'rights_consent_verified',action:'lock_brand_voice',to:'brand_voice_locked',roles:['brand_reviewer'],requiresEvidence:true},
+    {from:'brand_voice_locked',action:'record_copy_draft',to:'copy_drafted',roles:['copy_editor'],requiresEvidence:true},
+    {from:'copy_drafted',action:'record_timeline_edit',to:'timeline_edited',roles:['copy_editor'],requiresEvidence:true},
+    {from:'timeline_edited',action:'record_localization',to:'localized',roles:['copy_editor','integration_operator'],requiresEvidence:true},
+    {from:'localized',action:'evaluate_quality_accessibility',to:'quality_accessibility_evaluated',roles:['brand_reviewer','accessibility_reviewer'],requiresEvidence:true},
+    {from:'quality_accessibility_evaluated',action:'review_moderation',to:'moderation_review',roles:['legal_reviewer','campaign_manager'],requiresEvidence:true},
+    {from:'moderation_review',action:'submit_legal_review',to:'legal_review',roles:['legal_reviewer'],requiresEvidence:true,dualControl:true},
+    {from:'legal_review',action:'approve_publication_observation',to:'publication_approval',roles:['campaign_manager','legal_reviewer'],requiresEvidence:true,dualControl:true},
+    {from:'publication_approval',action:'record_publish_receipt',to:'publish_observed',roles:['integration_operator','campaign_manager'],requiresEvidence:true},
+    {from:'publication_approval',action:'record_publish_failure',to:'publish_failed',roles:['integration_operator','campaign_manager'],requiresEvidence:true},
+    {from:'publish_failed',action:'request_correction',to:'correction',roles:['copy_editor','campaign_manager'],requiresEvidence:true},
+    {from:'publish_observed',action:'reconcile_outcome',to:'outcome_reconciled',roles:['campaign_manager','brand_reviewer'],requiresEvidence:true},
+    {from:'outcome_reconciled',action:'archive_asset',to:'archived',roles:['campaign_manager','auditor'],requiresEvidence:true}
+  ],
+  acceptedFixture:{briefVersion:'br1',brandVersion:'b1',sourceVersion:'s1',modelVersion:'m1',policyVersion:'p1',rightsVersion:'r1',voiceConsistency:0.94,factualSupport:1,accessibilityScore:0.95,moderationPass:true,rightsVerified:true,consentVerified:true,multilingualPassRate:0.98,exportCompatibility:true,p95LatencyMs:900,usageCost:2.1},
+  rejectedFixture:{briefVersion:'br1',brandVersion:'b1',sourceVersion:'s1',modelVersion:'m1',policyVersion:'p1',rightsVersion:'r1',voiceConsistency:0.94,factualSupport:0.7,accessibilityScore:0.95,moderationPass:true,rightsVerified:true,consentVerified:true,multilingualPassRate:0.98,exportCompatibility:true,p95LatencyMs:900,usageCost:2.1},
+  readyDisposition:'independent_legal_publication_review_required',holdDisposition:'brand_rights_quality_or_moderation_hold',decisionField:'publishOrSpendCommand',
+  assess:x=>{const voice=Number(x.voiceConsistency),support=Number(x.factualSupport),accessibility=Number(x.accessibilityScore),multilingual=Number(x.multilingualPassRate),latency=Number(x.p95LatencyMs),cost=Number(x.usageCost);const ready=voice>=0.9&&support>=0.95&&accessibility>=0.9&&x.moderationPass===true&&x.rightsVerified===true&&x.consentVerified===true&&multilingual>=0.95&&x.exportCompatibility===true&&latency<=1500;return{disposition:ready?'independent_legal_publication_review_required':'brand_rights_quality_or_moderation_hold',publishOrSpendCommand:null,metrics:{voice,support,accessibility,multilingual,latency,cost},versions:{brief:x.briefVersion,brand:x.brandVersion,source:x.sourceVersion,model:x.modelVersion,policy:x.policyVersion,rights:x.rightsVersion}};}
+};

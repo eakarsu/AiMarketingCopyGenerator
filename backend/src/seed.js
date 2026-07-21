@@ -2,6 +2,10 @@ const pool = require('./config/database');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEMO_SEED !== 'true') throw new Error('Demo seed is disabled outside an explicitly approved non-production database.');
+const demoEmail = String(process.env.DEMO_EMAIL || '').trim().toLowerCase();
+const demoPassword = String(process.env.DEMO_PASSWORD || '');
+if (!demoEmail || demoPassword.length < 12) throw new Error('DEMO_EMAIL and a 12+ character DEMO_PASSWORD are required.');
 
 async function seed() {
   const client = await pool.connect();
@@ -24,10 +28,10 @@ async function seed() {
     console.log('Cleared existing data');
 
     // Create demo user
-    const hashedPassword = await bcrypt.hash('demo123', 10);
+    const hashedPassword = await bcrypt.hash(demoPassword, 12);
     const userResult = await client.query(
       'INSERT INTO users (email, password, name, company, role, phone, bio) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-      ['demo@aimarketing.com', hashedPassword, 'Demo User', 'AI Marketing Co', 'admin', '+1 (555) 123-4567', 'Marketing professional with 10+ years of experience in digital advertising and content strategy.']
+      [demoEmail, hashedPassword, 'Runtime Administrator', 'AI Marketing Co', 'admin', '+1 (555) 123-4567', 'Marketing professional with 10+ years of experience in digital advertising and content strategy.']
     );
     const userId = userResult.rows[0].id;
     console.log('Demo user created');
@@ -425,9 +429,7 @@ async function seed() {
     console.log('\n========================================');
     console.log('Database seeding completed successfully!');
     console.log('========================================');
-    console.log('Demo credentials:');
-    console.log('  Email: demo@aimarketing.com');
-    console.log('  Password: demo123');
+    console.log('Demo credentials were injected and are not displayed.');
     console.log('========================================\n');
 
   } catch (error) {

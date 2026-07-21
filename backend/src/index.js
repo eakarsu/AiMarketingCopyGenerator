@@ -1,99 +1,27 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+const express=require('express');
+const cors=require('cors');
+const path=require('path');
+require('dotenv').config({path:path.join(__dirname,'../../.env')});
+const governanceRouter=require('../governance/router');
+const {validateRuntime}=require('../governance/runtime');
+const {createProviderGate}=require('../governance/providerGate');
 
-const authRoutes = require('./routes/auth');
-const adCopyRoutes = require('./routes/adCopies');
-const emailCampaignRoutes = require('./routes/emailCampaigns');
-const socialPostRoutes = require('./routes/socialPosts');
-const productDescriptionRoutes = require('./routes/productDescriptions');
-const blogPostRoutes = require('./routes/blogPosts');
-const landingPageRoutes = require('./routes/landingPages');
-const taglineRoutes = require('./routes/taglines');
-const seoContentRoutes = require('./routes/seoContent');
-const pressReleaseRoutes = require('./routes/pressReleases');
-const videoScriptRoutes = require('./routes/videoScripts');
-const seoOptimizationRoutes = require('./routes/seoOptimizations');
-const toneAdjustmentRoutes = require('./routes/toneAdjustments');
-const abVariationRoutes = require('./routes/abVariations');
-const headlineScoreRoutes = require('./routes/headlineScores');
-const localizationRoutes = require('./routes/localizations');
-const aiRoutes = require('./routes/ai');
+validateRuntime();
+const app=express();
+const port=Number(process.env.BACKEND_PORT);
+if(!Number.isInteger(port)||port<1||port>65535)throw new Error('BACKEND_PORT must be an assigned TCP port.');
+const origins=String(process.env.CORS_ORIGINS||'').split(',').map(value=>value.trim()).filter(Boolean);
+if(!origins.length||origins.includes('*'))throw new Error('CORS_ORIGINS must be an explicit allowlist.');
+app.disable('x-powered-by');
+app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');next();});
+app.use(cors({origin:(origin,callback)=>!origin||origins.includes(origin)?callback(null,true):callback(new Error('Origin not allowed by CORS')),credentials:true}));
+app.use(express.json({limit:'1mb'}));
+app.use(createProviderGate(['/api/ai','/api/gap','/api/generated','/api/copy-optimizer-agent','/api/brand-voice','/api/publish']));
+app.get('/api/health',(_req,res)=>res.json({status:'ok',workflow:'approved_marketing_asset_release',timestamp:new Date().toISOString()}));
+app.use('/api/auth',require('./routes/auth'));
+app.use('/api/governance',governanceRouter);
+app.use((_req,res)=>res.status(404).json({error:'ROUTE_NOT_SUPPORTED'}));
+app.use((error,_req,res,_next)=>{console.error('Request failed:',error.message);res.status(500).json({error:'INTERNAL_SERVER_ERROR'});});
+app.listen(port,()=>console.log(`Governed marketing-copy API listening on ${port}`));
 
-const app = express();
-const PORT = process.env.BACKEND_PORT || 3001;
-
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
-app.use(express.json());
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/ad-copies', adCopyRoutes);
-app.use('/api/email-campaigns', emailCampaignRoutes);
-app.use('/api/social-posts', socialPostRoutes);
-app.use('/api/product-descriptions', productDescriptionRoutes);
-app.use('/api/blog-posts', blogPostRoutes);
-app.use('/api/landing-pages', landingPageRoutes);
-app.use('/api/taglines', taglineRoutes);
-app.use('/api/seo-content', seoContentRoutes);
-app.use('/api/press-releases', pressReleaseRoutes);
-app.use('/api/video-scripts', videoScriptRoutes);
-app.use('/api/seo-optimizations', seoOptimizationRoutes);
-app.use('/api/tone-adjustments', toneAdjustmentRoutes);
-app.use('/api/ab-variations', abVariationRoutes);
-app.use('/api/headline-scores', headlineScoreRoutes);
-app.use('/api/localizations', localizationRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/offer-message-fit', require('./routes/offer-message-fit'));
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-// === BATCH 05 AUTO-MOUNT (custom feature suggestions) ===
-app.use('/api/copy-optimizer-agent', require('./routes/copy-optimizer-agent'));
-app.use('/api/multi-language-adapt', require('./routes/multi-language-adapt'));
-app.use('/api/competitor-scrape', require('./routes/competitor-scrape'));
-app.use('/api/brand-voice-enforcer', require('./routes/brand-voice-enforcer'));
-app.use('/api/vertical-compliance-templates', require('./routes/vertical-compliance-templates'));
-
-// === Batch 05 Gaps & Frontend Mounts ===
-try { const _gap_brand_voice_analyzer = require('./routes/gap-brand-voice-analyzer'); app.use('/api/gap-brand-voice-analyzer', _gap_brand_voice_analyzer); } catch(e) { console.error('gap mount fail brand-voice-analyzer:', e.message); }
-try { const _gap_competitor_comparison = require('./routes/gap-competitor-comparison'); app.use('/api/gap-competitor-comparison', _gap_competitor_comparison); } catch(e) { console.error('gap mount fail competitor-comparison:', e.message); }
-try { const _gap_audience_sentiment = require('./routes/gap-audience-sentiment'); app.use('/api/gap-audience-sentiment', _gap_audience_sentiment); } catch(e) { console.error('gap mount fail audience-sentiment:', e.message); }
-try { const _gap_cta_optimizer = require('./routes/gap-cta-optimizer'); app.use('/api/gap-cta-optimizer', _gap_cta_optimizer); } catch(e) { console.error('gap mount fail cta-optimizer:', e.message); }
-try { const _gap_substantive = require('./routes/gap-substantive'); app.use('/api/gap-substantive', _gap_substantive); } catch(e) { console.error('gap mount fail substantive:', e.message); }
-try { const _gap_plagiarism = require('./routes/gap-plagiarism'); app.use('/api/gap-plagiarism', _gap_plagiarism); } catch(e) { console.error('gap mount fail plagiarism:', e.message); }
-try { const _gap_readability = require('./routes/gap-readability'); app.use('/api/gap-readability', _gap_readability); } catch(e) { console.error('gap mount fail readability:', e.message); }
-try { const _gap_cms = require('./routes/gap-cms'); app.use('/api/gap-cms', _gap_cms); } catch(e) { console.error('gap mount fail cms:', e.message); }
-try { const _gap_scheduling = require('./routes/gap-scheduling'); app.use('/api/gap-scheduling', _gap_scheduling); } catch(e) { console.error('gap mount fail scheduling:', e.message); }
-try { const _gap_cross_channel = require('./routes/gap-cross-channel'); app.use('/api/gap-cross-channel', _gap_cross_channel); } catch(e) { console.error('gap mount fail cross-channel:', e.message); }
-try { const _gap_collaborative = require('./routes/gap-collaborative'); app.use('/api/gap-collaborative', _gap_collaborative); } catch(e) { console.error('gap mount fail collaborative:', e.message); }
-try { const _gap_style = require('./routes/gap-style'); app.use('/api/gap-style', _gap_style); } catch(e) { console.error('gap mount fail style:', e.message); }
-try { const _gap_webhooks = require('./routes/gap-webhooks'); app.use('/api/gap-webhooks', _gap_webhooks); } catch(e) { console.error('gap mount fail webhooks:', e.message); }
-// === End Batch 05 Mounts ===
-
-// === Custom Views (4 endpoints: variants, ctr-comparison, copy-export, brand-profiles) ===
-try {
-  const customViews = require('./routes/customViews');
-  app.use('/api/custom-views', customViews);
-  console.log('Mounted /api/custom-views');
-} catch (e) {
-  console.error('Failed to mount /api/custom-views:', e.message);
-}
+module.exports=app;

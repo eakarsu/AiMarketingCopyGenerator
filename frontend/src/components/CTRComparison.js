@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API = process.env.REACT_APP_API_URL || '/api';
 
 function colorForVariant(letter) {
   if (letter === 'A') return '#6366f1';

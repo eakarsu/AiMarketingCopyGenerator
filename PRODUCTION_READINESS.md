@@ -1,0 +1,7 @@
+# Governed marketing-asset release
+
+The supported API is `/api/governance`. It records brief/source provenance, rights/consent, authoritative brand-voice versions, editable copy, localization, quality/accessibility/moderation, legal review, disclosure, dual publication approval, publish receipts, correction, outcomes, and immutable audit history. It never invents substantiation, spends funds, or publishes autonomously.
+
+Apply `backend/migrations/001_governed_marketing_asset_release.sql` separately. Pre-provision tenant and campaign scopes. Model, rights/asset, storage/CDN, transcription/translation, publishing, brand-registry, usage, analytics, and moderation workers remain disabled until credentials, typed contracts, signed receipts, usage reconciliation, retry/dead-letter, deletion, and recovery tests pass. The brand-voice gap is replaced by durable versioned brand evidence and deterministic acceptance checks on the supported path.
+
+Use `.env.example`; production rejects weak secrets, wildcard CORS, demo/mock/provider flags, and startup mutation. `start.sh` never installs, seeds, migrates, resets data, or reclaims ports. Brand, legal, rights, and accessibility reviewers must validate voice fidelity, factual support, layout/timing, multilingual export, moderation, disclosure, provider failure, latency, cost, and realized campaign outcomes. No live generation, spend, or publication was performed here.

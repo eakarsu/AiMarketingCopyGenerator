@@ -9,9 +9,10 @@ const authMiddleware = require('../middleware/auth');
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
 
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE lower(email) = $1', [String(email).trim().toLowerCase()]);
     const user = result.rows[0];
 
     if (!user) {
@@ -40,7 +41,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(503).json({ error: 'Authentication service unavailable' });
   }
 });
 
@@ -95,13 +96,13 @@ router.get('/me', async (req, res) => {
     const result = await pool.query('SELECT id, email, name, company, role, phone, bio FROM users WHERE id = $1', [decoded.id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'User not found' });
     }
 
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(503).json({ error: 'Authentication service unavailable' });
   }
 });
 
