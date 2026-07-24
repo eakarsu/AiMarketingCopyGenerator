@@ -16,6 +16,7 @@ app.disable('x-powered-by');
 app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');next();});
 app.use(cors({origin:(origin,callback)=>!origin||origins.includes(origin)?callback(null,true):callback(new Error('Origin not allowed by CORS')),credentials:true}));
 app.use(express.json({limit:'1mb'}));
+app.use('/api/runtime-ai',require('./routes/runtimeAi'));
 app.use(createProviderGate(['/api/ai','/api/gap','/api/generated','/api/copy-optimizer-agent','/api/brand-voice','/api/publish']));
 app.get('/api/health',(_req,res)=>res.json({status:'ok',workflow:'approved_marketing_asset_release',timestamp:new Date().toISOString()}));
 app.use('/api/auth',require('./routes/auth'));
