@@ -510,7 +510,7 @@ function LoginPage() {
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <button type="button" className="auto-fill-btn" onClick={autoFill}>
-            Click to auto-fill demo credentials
+            Auto Fill Demo Credentials
           </button>
           <div className="form-group">
             <label>Email</label>
