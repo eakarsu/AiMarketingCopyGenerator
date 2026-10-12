@@ -21,6 +21,26 @@ app.use(createProviderGate(['/api/ai','/api/gap','/api/generated','/api/copy-opt
 app.get('/api/health',(_req,res)=>res.json({status:'ok',workflow:'approved_marketing_asset_release',timestamp:new Date().toISOString()}));
 app.use('/api/auth',require('./routes/auth'));
 app.use('/api/governance',governanceRouter);
+// Restore the existing record and native AI routes used by the dashboard and detail views.
+for (const [route, moduleName] of Object.entries({
+  'ad-copies': 'adCopies', 'email-campaigns': 'emailCampaigns',
+  'social-posts': 'socialPosts', 'product-descriptions': 'productDescriptions',
+  'blog-posts': 'blogPosts', 'landing-pages': 'landingPages',
+  'taglines': 'taglines', 'seo-content': 'seoContent',
+  'press-releases': 'pressReleases', 'video-scripts': 'videoScripts',
+  'seo-optimizations': 'seoOptimizations', 'tone-adjustments': 'toneAdjustments',
+  'ab-variations': 'abVariations', 'headline-scores': 'headlineScores',
+  'localizations': 'localizations', 'custom-views': 'customViews',
+})) app.use(`/api/${route}`, require(`./routes/${moduleName}`));
+app.use('/api/ai', require('./routes/ai'));
+
+// Advisory AI reports only; native execution and approval routes stay unchanged.
+const aiWorkspaceSupport = require("../aiWorkspaceAdapters.cjs");
+const aiWorkspaceDatabase = require("./config/database.js");
+app.use('/api/report-workspace', require("../aiWorkspace.cjs").createAIWorkspaceRouter({
+  pool: aiWorkspaceDatabase, authenticateToken: require("./middleware/auth.js"),
+  aiRateLimiter: aiWorkspaceSupport.createWorkspaceLimiter(), features: require("../aiWorkspaceFeatures.json"),
+}));
 app.use((_req,res)=>res.status(404).json({error:'ROUTE_NOT_SUPPORTED'}));
 app.use((error,_req,res,_next)=>{console.error('Request failed:',error.message);res.status(500).json({error:'INTERNAL_SERVER_ERROR'});});
 app.listen(port,()=>console.log(`Governed marketing-copy API listening on ${port}`));

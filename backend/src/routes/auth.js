@@ -45,6 +45,24 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Local demo access uses the already configured account without sending its password to the browser.
+router.post('/demo-login', async (_req, res) => {
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DEMO_CREDENTIAL_AUTOFILL === 'false' || !process.env.DEMO_EMAIL || !process.env.DEMO_PASSWORD) {
+    return res.status(503).json({ error: 'Demo login requires a configured local demo account.' });
+  }
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE lower(email) = $1', [process.env.DEMO_EMAIL.trim().toLowerCase()]);
+    const user = result.rows[0];
+    if (!user || !await bcrypt.compare(process.env.DEMO_PASSWORD, user.password)) {
+      return res.status(503).json({ error: 'The configured demo account is unavailable.' });
+    }
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, company: user.company, role: user.role || 'admin', phone: user.phone, bio: user.bio } });
+  } catch (_error) {
+    res.status(503).json({ error: 'Authentication service unavailable' });
+  }
+});
+
 // Register
 router.post('/register', async (req, res) => {
   try {

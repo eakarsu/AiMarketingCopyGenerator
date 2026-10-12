@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import AIReport from './components/AIReport';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api'
@@ -53,6 +54,21 @@ const TOOLS = [
     ],
   },
 ];
+
+const EXAMPLES = {
+  'brand-voice-analyzer': [
+    { label: 'Outdoor launch', values: { content: 'Meet the Ridge Pack: a durable daypack made for your next trail. Explore the collection today.', voiceGuidelines: 'Clear, optimistic, practical. Avoid unsupported performance claims and exaggerated superlatives.', brandName: 'North Trail' } },
+    { label: 'Coffee newsletter', values: { content: 'A bright new roast has arrived. Discover the tasting notes and find your next morning favorite.', voiceGuidelines: 'Warm and conversational, with specific sensory details and no pressure tactics.', brandName: 'Harbor Coffee' } },
+  ],
+  'competitor-comparison': [
+    { label: 'Team software', values: { ourCopy: 'Plan campaigns, assign owners, and review approvals in one shared workspace.', competitorCopy: 'Automate every campaign task instantly with our all-in-one platform.', industry: 'Marketing software', goal: 'Find credible differentiation around collaboration and approvals.' } },
+    { label: 'Skincare', values: { ourCopy: 'A simple daily moisturizer with fragrance-free ingredients and refillable packaging.', competitorCopy: 'Luxury skincare that transforms your skin overnight.', industry: 'Skincare', goal: 'Compare claim strength and positioning for sensitive-skin shoppers.' } },
+  ],
+  'audience-sentiment': [
+    { label: 'Trial email', values: { copy: 'Try the project planner for 14 days and see your next launch in one place.', audience: 'Small business owners managing their first product launch', channel: 'Email', productCategory: 'Project management software' } },
+    { label: 'Reuse campaign', values: { copy: 'Carry a refillable bottle wherever the day takes you. Browse colors and sizes.', audience: 'Commuters seeking reusable everyday products', channel: 'Instagram', productCategory: 'Drinkware' } },
+  ],
+};
 
 export default function AIToolsPage() {
   const [active, setActive] = useState(TOOLS[0].key);
@@ -121,6 +137,10 @@ export default function AIToolsPage() {
         <p style={{ color: '#64748b', marginBottom: 16 }}>{tool.description}</p>
 
         <form onSubmit={submit}>
+          <div className="ai-examples" aria-label="Complete sample inputs">
+            <span className="ai-examples-label">Fill every field:</span>
+            {EXAMPLES[tool.key].map(example => <button key={example.label} type="button" className="btn-example" disabled={loading} onClick={() => { setInputs(example.values); setResult(null); setError(null); }}>{example.label}</button>)}
+          </div>
           {tool.fields.map(field => (
             <div key={field.key} style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
@@ -174,14 +194,7 @@ export default function AIToolsPage() {
           </div>
         )}
 
-        {result && (
-          <div style={{ marginTop: 20, padding: 16, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-            <h3 style={{ marginBottom: 8 }}>Result</h3>
-            <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontSize: 12 }}>
-              {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-            </pre>
-          </div>
-        )}
+        {result !== null && <AIReport response={result} title={`${tool.label} result`} />}
       </div>
     </div>
   );

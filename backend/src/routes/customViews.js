@@ -20,7 +20,7 @@ async function ensureBrandProfilesTable() {
     );
   `);
 }
-ensureBrandProfilesTable().catch(err => console.error('brand_profiles init failed:', err.message));
+// Schema setup belongs to the approved database preparation path, not route startup.
 
 // ----- Helpers ---------------------------------------------------------------
 

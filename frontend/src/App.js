@@ -1,3 +1,5 @@
+import AIReportLibrary from "./components/AIReportLibrary";
+import AIReport from "./components/AIReport";
 import React, { useState, useEffect, useCallback, createContext, useContext, useRef, Component } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -12,6 +14,12 @@ import CodexOperationsFeature from './pages/CodexOperationsFeature';
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api'
 });
+
+function recordsFromPayload(payload) {
+  const records = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? payload?.rows;
+  if (!Array.isArray(records)) throw new TypeError('The record API returned an invalid list response.');
+  return records;
+}
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -496,9 +504,18 @@ function LoginPage() {
     }
   };
 
-  const autoFill = () => {
-    setEmail(process.env.REACT_APP_DEMO_EMAIL || '');
-    setPassword(process.env.REACT_APP_DEMO_PASSWORD || '');
+  const demoLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/auth/demo-login');
+      login(response.data.token, response.data.user);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Demo login is unavailable');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -509,8 +526,8 @@ function LoginPage() {
           <p>Sign in to your account</p>
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
-          <button type="button" className="auto-fill-btn" onClick={autoFill}>
-            Auto Fill Demo Credentials
+          <button type="button" className="auto-fill-btn" onClick={demoLogin} disabled={loading}>
+            Log In as Demo
           </button>
           <div className="form-group">
             <label>Email</label>
@@ -847,7 +864,7 @@ function Dashboard() {
       const endpoints = features.map(f => f.id);
       const results = await Promise.all(
         endpoints.map(endpoint =>
-          api.get(`/${endpoint}`).then(res => ({ [endpoint]: res.data.length })).catch(() => ({ [endpoint]: 0 }))
+          api.get(`/${endpoint}`).then(res => ({ [endpoint]: recordsFromPayload(res.data).length })).catch(() => ({ [endpoint]: 0 }))
         )
       );
       setCounts(Object.assign({}, ...results));
@@ -887,48 +904,13 @@ function Dashboard() {
 
 // ==================== AI Output Display ====================
 function AIOutputDisplay({ data, title }) {
-  if (!data) return null;
-
-  const renderValue = (key, value) => {
-    if (value === null || value === undefined) return null;
-    if (key.includes('score') && typeof value === 'number') {
-      const color = value >= 80 ? '#10b981' : value >= 60 ? '#f59e0b' : '#ef4444';
-      return (
-        <div className="ai-score-display">
-          <div className="ai-score-bar"><div className="ai-score-fill" style={{ width: `${value}%`, backgroundColor: color }}></div></div>
-          <span className="ai-score-value" style={{ color }}>{value}/100</span>
-        </div>
-      );
-    }
-    if (typeof value === 'string' && (value.includes('\n') || value.length > 100)) {
-      return <pre className="ai-content-block">{value}</pre>;
-    }
-    return <span className="ai-value">{String(value)}</span>;
-  };
-
-  const formatLabel = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-  return (
-    <div className="ai-output-container">
-      {title && <h3 className="ai-output-title"><Icons.Sparkles /> {title}</h3>}
-      <div className="ai-output-grid">
-        {Object.entries(data).map(([key, value]) => {
-          if (['id', 'user_id', 'created_at', 'updated_at', 'status'].includes(key)) return null;
-          return (
-            <div key={key} className="ai-output-item">
-              <label className="ai-output-label">{formatLabel(key)}</label>
-              {renderValue(key, value)}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <AIReport response={data} title={title || 'Saved content'} />;
 }
 
 // ==================== Feature Page (Enhanced) ====================
 function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   const [items, setItems] = useState([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -945,7 +927,7 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [formErrors, setFormErrors] = useState({});
 
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 15;
   const { addToast } = useToast();
   const confirm = useConfirm();
   const { user } = useAuth();
@@ -954,6 +936,7 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   useEffect(() => {
     setSelectedItem(null);
     setLoading(true);
+    setLoadError('');
     setAiResult(null);
     setSearchTerm('');
     setStatusFilter('all');
@@ -969,9 +952,11 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   const fetchItems = async () => {
     try {
       const response = await api.get(`/${feature.id}`);
-      setItems(response.data);
+      setItems(recordsFromPayload(response.data));
+      setLoadError('');
     } catch (error) {
-      console.error('Error fetching items:', error);
+      setItems([]);
+      setLoadError(error.response?.data?.error || error.message || 'Could not load records.');
     } finally {
       setLoading(false);
     }
@@ -1172,6 +1157,7 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   );
 
   if (loading) return <LoadingSkeleton type="table" />;
+  if (loadError) return <div role="alert" className="form-error-message">{feature.name}: {loadError}</div>;
 
   // Detail View
   if (selectedItem) {
@@ -1222,7 +1208,7 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
   const emptyState = getEmptyState();
 
   return (
-    <div>
+    <><div>
       <div className="page-header">
         <h1>{feature.name}</h1>
         <div className="page-header-actions">
@@ -1416,7 +1402,7 @@ function FeaturePage({ feature, columns, formFields, aiEndpoint, aiFields }) {
           </div>
         </div>
       )}
-    </div>
+    </div></>
   );
 }
 
@@ -1841,7 +1827,7 @@ function App() {
   };
 
   return (
-    <ErrorBoundary>
+    <><AIReportLibrary floating /><ErrorBoundary>
       <AuthContext.Provider value={{ isAuthenticated: !!token, user, login, logout }}>
         <ToastProvider>
           <ConfirmProvider>
@@ -1866,7 +1852,7 @@ function App() {
           </ConfirmProvider>
         </ToastProvider>
       </AuthContext.Provider>
-    </ErrorBoundary>
+    </ErrorBoundary></>
   );
 }
 
