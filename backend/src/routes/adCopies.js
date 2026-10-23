@@ -6,9 +6,14 @@ const authMiddleware = require('../middleware/auth');
 // Get all ad copies
 router.get('/', authMiddleware, async (req, res) => {
   try {
+    const { search, status, platform } = req.query;
+    const params = [req.userId]; let where = 'WHERE user_id = $1'; let i = 2;
+    if (search) { where += ` AND (title ILIKE $${i} OR content ILIKE $${i})`; params.push(`%${search}%`); i++; }
+    if (status) { where += ` AND status = $${i}`; params.push(status); i++; }
+    if (platform) { where += ` AND platform ILIKE $${i}`; params.push(`%${platform}%`); i++; }
     const result = await pool.query(
-      'SELECT * FROM ad_copies WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.userId]
+      `SELECT * FROM ad_copies ${where} ORDER BY created_at DESC`,
+      params
     );
     res.json(result.rows);
   } catch (error) {

@@ -33,6 +33,7 @@ for (const [route, moduleName] of Object.entries({
   'localizations': 'localizations', 'custom-views': 'customViews',
 })) app.use(`/api/${route}`, require(`./routes/${moduleName}`));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/tasks', require('./routes/featurePack').createRouter({authenticate: require('./middleware/auth')}));
 
 // Advisory AI reports only; native execution and approval routes stay unchanged.
 const aiWorkspaceSupport = require("../aiWorkspaceAdapters.cjs");
